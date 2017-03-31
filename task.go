@@ -4,9 +4,14 @@ import (
 	"context"
 	"sort"
 	"sync"
+
+	"github.com/google/uuid"
+	"github.com/mmatczuk/proxy/log"
 )
 
 type task struct {
+	// ID is task identifier.
+	ID TaskID
 	// context is a common context for all remote calls.
 	context context.Context
 	// cancel enables cancelling remote calls.
@@ -19,14 +24,23 @@ type task struct {
 	mu sync.RWMutex
 	// done is closed when task is done
 	done chan struct{}
+	// logger
+	logger log.Logger
 }
 
 // newTask creates and starts new asynchronous task.
-func newTask(config *TaskConfig, client RemoteClient, addrs ...string) *task {
+func newTask(config *TaskConfig, client RemoteClient, addrs []string, logger log.Logger) (*task, error) {
+	u, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
 	t := &task{
+		ID:     TaskID(u.String()),
 		client: client,
 		result: make(map[string]*Result, len(addrs)),
 		done:   make(chan struct{}),
+		logger: logger,
 	}
 	t.context, t.cancel = context.WithCancel(context.Background())
 
@@ -46,7 +60,7 @@ func newTask(config *TaskConfig, client RemoteClient, addrs ...string) *task {
 		panic("not supported mode")
 	}
 
-	return t
+	return t, nil
 }
 
 func (t *task) runSequential(config *TaskConfig, addrs []string) {
@@ -57,13 +71,13 @@ func (t *task) runSequential(config *TaskConfig, addrs []string) {
 		t.remoteCall(config, addr)
 		// task was killed
 		if t.context.Err() != nil {
-			t.markKilled()
+			t.markAsKilled()
 			break
 		}
 	}
 }
 
-func (t *task) markKilled() {
+func (t *task) markAsKilled() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -105,10 +119,23 @@ func (t *task) remoteCall(config *TaskConfig, addr string) {
 			t.cancel()
 		}
 
+		t.logger.Log(
+			"msg", "remote call failure",
+			"task", t.ID,
+			"addr", addr,
+			"err", err,
+		)
+
 		return
 	}
 
 	t.setStatus(addr, Success, nil)
+
+	t.logger.Log(
+		"msg", "remote call success",
+		"task", t.ID,
+		"addr", addr,
+	)
 }
 
 func (t *task) status() *TaskStatus {

@@ -6,6 +6,7 @@ type TaskID string
 // TaskMode specifies task execution mode.
 type TaskMode string
 
+// TaskMode values.
 const (
 	Sequential TaskMode = "sequential"
 	Parallel            = "parallel"
@@ -22,6 +23,7 @@ type TaskConfig struct {
 // Status specifies remote command execution status.
 type Status string
 
+// Status values.
 const (
 	Pending Status = "pending"
 	Running        = "running"

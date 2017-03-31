@@ -4,12 +4,10 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/mmatczuk/proxy/log"
 )
 
 type server struct {
 	service Service
-	logger  log.Logger
 }
 
 // NewServer creates HTTP handler exposing service via JSON/REST interface.

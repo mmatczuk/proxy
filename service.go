@@ -5,7 +5,6 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/mmatczuk/proxy/log"
 )
 
@@ -24,31 +23,41 @@ type service struct {
 	logger  log.Logger
 }
 
+// NewService creates new service instance.
+func NewService(client RemoteClient, addrs []string, logger log.Logger) Service {
+	if client == nil {
+		panic("missing client")
+	}
+	if addrs == nil {
+		panic("missing addrs")
+	}
+	if logger == nil {
+		panic("missing logger")
+	}
+
+	return &service{
+		client: client,
+		addrs:  addrs,
+		tasks:  make(map[TaskID]*task),
+		logger: logger,
+	}
+}
+
 func (s *service) CreateTask(ctx context.Context, config *TaskConfig) (TaskID, error) {
-	id, err := newTaskID()
+	t, err := newTask(config, s.client, s.addrs, s.logger)
 	if err != nil {
 		s.logger.Log(
-			"msg", "failed to generate id",
+			"msg", "failed to create task",
 			"err", err,
 		)
 		return "", errors.New("failed to generate id")
 	}
 
-	t := newTask(config, s.client, s.addrs...)
-
 	s.tasksMu.Lock()
-	s.tasks[id] = t
+	s.tasks[t.ID] = t
 	s.tasksMu.Unlock()
 
-	return id, nil
-}
-
-func newTaskID() (TaskID, error) {
-	u, err := uuid.NewUUID()
-	if err != nil {
-		return "", err
-	}
-	return TaskID(u.String()), nil
+	return t.ID, nil
 }
 
 func (s *service) TaskStatus(ctx context.Context, id TaskID) (*TaskStatus, error) {

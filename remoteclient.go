@@ -23,7 +23,8 @@ type remoteClient struct {
 	client http.Client
 }
 
-func NewRemoteClient() *remoteClient {
+// NewRemoteClient creates instance of HTTP based remote client.
+func NewRemoteClient() RemoteClient {
 	return &remoteClient{
 		client: http.Client{
 			Transport: &http.Transport{

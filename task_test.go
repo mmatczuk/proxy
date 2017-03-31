@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-kit/kit/log"
 	"github.com/golang/mock/gomock"
 )
 
@@ -20,11 +21,14 @@ func TestRunSequentialTaskFailOnError(t *testing.T) {
 		m.EXPECT().Update(gomock.Any(), "addr1", "info").Return(errors.New("boom")),
 	)
 
-	task := newTask(&TaskConfig{
+	task, err := newTask(&TaskConfig{
 		Mode:        Sequential,
 		FailOnError: true,
 		Info:        "info",
-	}, m, "addr0", "addr1", "addr2")
+	}, m, []string{"addr0", "addr1", "addr2"}, log.NewNopLogger())
+	if err != nil {
+		panic(err)
+	}
 
 	<-task.context.Done()
 
@@ -63,11 +67,14 @@ func TestRunSequentialTask(t *testing.T) {
 		m.EXPECT().Update(gomock.Any(), "addr2", "info").Return(errors.New("boom")),
 	)
 
-	task := newTask(&TaskConfig{
+	task, err := newTask(&TaskConfig{
 		Mode:        Sequential,
 		FailOnError: false,
 		Info:        "info",
-	}, m, "addr0", "addr1", "addr2")
+	}, m, []string{"addr0", "addr1", "addr2"}, log.NewNopLogger())
+	if err != nil {
+		panic(err)
+	}
 
 	<-task.done
 
@@ -105,11 +112,14 @@ func TestRunParallelTaskFailOnError(t *testing.T) {
 	m.EXPECT().Update(gomock.Any(), "addr1", "info").Return(errors.New("boom"))
 	m.EXPECT().Update(gomock.Any(), "addr2", "info").Return(errors.New("killed")).Do(func(ctx context.Context, addr, info string) { <-ctx.Done() })
 
-	task := newTask(&TaskConfig{
+	task, err := newTask(&TaskConfig{
 		Mode:        Parallel,
 		FailOnError: true,
 		Info:        "info",
-	}, m, "addr0", "addr1", "addr2")
+	}, m, []string{"addr0", "addr1", "addr2"}, log.NewNopLogger())
+	if err != nil {
+		panic(err)
+	}
 
 	<-task.done
 
@@ -146,11 +156,14 @@ func TestRunParallelTask(t *testing.T) {
 	m.EXPECT().Update(gomock.Any(), "addr1", "info").Return(errors.New("boom"))
 	m.EXPECT().Update(gomock.Any(), "addr2", "info").Return(nil)
 
-	task := newTask(&TaskConfig{
+	task, err := newTask(&TaskConfig{
 		Mode:        Parallel,
 		FailOnError: false,
 		Info:        "info",
-	}, m, "addr0", "addr1", "addr2")
+	}, m, []string{"addr0", "addr1", "addr2"}, log.NewNopLogger())
+	if err != nil {
+		panic(err)
+	}
 
 	<-task.done
 
