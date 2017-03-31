@@ -5,7 +5,7 @@ Proxy is a POC asynchronous proxy to legacy systems.
 ## Installation
 
 ```bash
-$ github.com/mmatczuk/proxy/cmd/proxy
+$ go get github.com/mmatczuk/proxy/cmd/proxy
 ```
 
 ## Running
@@ -34,13 +34,12 @@ $ curl -XPOST -d'{
 
 ```bash
 $ curl localhost:8080/v1/task/d74b0690-1619-11e7-8191-704d7b4a5d2f/status
-[{"addr":"ala","status":"failure","message":"failed to send request: Post http://host: dial tcp: lookup host on 127.0.1.1:53: no such host"}]
+[{"addr":"localhost:9090","status":"running"},{"addr":"localhost:9091","status":"pending"},{"addr":"localhost:9092","status":"pending"}]
 ```
 
 ### Kill task
 
 ```bash
 $ curl localhost:8080/v1/task/d74b0690-1619-11e7-8191-704d7b4a5d2f/kill
-       []
-
+[{"addr":"localhost:9090","status":"killed"}]
 ```
