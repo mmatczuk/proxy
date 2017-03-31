@@ -93,7 +93,7 @@ func (s *server) killTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var killed []Result
+	killed := []Result{}
 	for _, v := range t.Results {
 		if v.Status == Killed {
 			killed = append(killed, v)
