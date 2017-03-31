@@ -30,6 +30,7 @@ const (
 	Success        = "success"
 	Failure        = "failure"
 	Killed         = "killed"
+	Ignored        = "ignored"
 )
 
 // Result represents remote command execution result.

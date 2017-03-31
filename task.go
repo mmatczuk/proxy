@@ -68,22 +68,21 @@ func (t *task) runSequential(config *TaskConfig, addrs []string) {
 	defer close(t.done)
 
 	for _, addr := range addrs {
-		t.remoteCall(config, addr)
-		// task was killed
-		if t.context.Err() != nil {
-			t.markAsKilled()
+		err := t.remoteCall(config, addr)
+		if t.killed() || (err != nil && config.FailOnError) {
+			t.markPendingIgnored()
 			break
 		}
 	}
 }
 
-func (t *task) markAsKilled() {
+func (t *task) markPendingIgnored() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	for _, r := range t.result {
-		if r.Status == Pending || r.Status == Running {
-			r.Status = Killed
+		if r.Status == Pending {
+			r.Status = Ignored
 		}
 	}
 }
@@ -104,12 +103,12 @@ func (t *task) runParallel(config *TaskConfig, addrs []string) {
 	wg.Wait()
 }
 
-func (t *task) remoteCall(config *TaskConfig, addr string) {
+func (t *task) remoteCall(config *TaskConfig, addr string) error {
 	t.setStatus(addr, Running, nil)
 
 	err := t.client.Update(t.context, addr, config.Info)
 	if err != nil {
-		if t.context.Err() != nil {
+		if t.killed() {
 			t.setStatus(addr, Killed, nil)
 		} else {
 			t.setStatus(addr, Failure, err)
@@ -126,7 +125,7 @@ func (t *task) remoteCall(config *TaskConfig, addr string) {
 			"err", err,
 		)
 
-		return
+		return err
 	}
 
 	t.setStatus(addr, Success, nil)
@@ -136,6 +135,8 @@ func (t *task) remoteCall(config *TaskConfig, addr string) {
 		"task", t.ID,
 		"addr", addr,
 	)
+
+	return nil
 }
 
 func (t *task) status() *TaskStatus {
@@ -170,8 +171,14 @@ func (t *task) setStatus(addr string, s Status, err error) {
 	}
 }
 
+func (t *task) killed() bool {
+	return t.context.Err() != nil
+}
+
 func (t *task) kill() {
 	t.mu.Lock()
-	defer t.mu.Unlock()
 	t.cancel()
+	t.mu.Unlock()
+
+	<- t.done
 }

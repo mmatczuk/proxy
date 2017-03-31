@@ -47,7 +47,7 @@ func TestRunSequentialTaskFailOnError(t *testing.T) {
 			},
 			{
 				Addr:   "addr2",
-				Status: Killed,
+				Status: Ignored,
 			},
 		},
 	}) {
@@ -95,6 +95,49 @@ func TestRunSequentialTask(t *testing.T) {
 				Addr:   "addr2",
 				Status: Failure,
 				Msg:    "boom",
+			},
+		},
+	}) {
+		t.Fatal("wrong status", s)
+	}
+}
+
+func TestRunSequentialTaskKill(t *testing.T) {
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := NewMockRemoteClient(ctrl)
+	m.EXPECT().Update(gomock.Any(), "addr0", "info").Return(errors.New("killed")).Do(func(ctx context.Context, addr, info string) { <-ctx.Done() })
+
+	task, err := newTask(&TaskConfig{
+		Mode:        Sequential,
+		FailOnError: false,
+		Info:        "info",
+	}, m, []string{"addr0", "addr1", "addr2"}, log.NewNopLogger())
+	if err != nil {
+		panic(err)
+	}
+
+	task.kill()
+
+	<-task.done
+
+	s := task.status()
+
+	if !reflect.DeepEqual(s, &TaskStatus{
+		Results: []Result{
+			{
+				Addr:   "addr0",
+				Status: Killed,
+			},
+			{
+				Addr:   "addr1",
+				Status: Ignored,
+			},
+			{
+				Addr:   "addr2",
+				Status: Ignored,
 			},
 		},
 	}) {
