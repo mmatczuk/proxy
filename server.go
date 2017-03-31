@@ -50,7 +50,7 @@ func router(s *server) http.Handler {
 
 func (s *server) createTask(w http.ResponseWriter, r *http.Request) {
 	var c TaskConfig
-	if err := readBody(&c, r); err != nil {
+	if err := readJSON(&c, r.Body); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

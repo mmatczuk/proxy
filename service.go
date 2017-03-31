@@ -34,14 +34,7 @@ func (s *service) CreateTask(ctx context.Context, config *TaskConfig) (TaskID, e
 		return "", errors.New("failed to generate id")
 	}
 
-	t, err := newTask(config, s.client, s.addrs...)
-	if err != nil {
-		s.logger.Log(
-			"msg", "failed to create task",
-			"err", err,
-		)
-		return "", errors.New("failed to create task")
-	}
+	t := newTask(config, s.client, s.addrs...)
 
 	s.tasksMu.Lock()
 	s.tasks[id] = t
@@ -67,7 +60,7 @@ func (s *service) TaskStatus(ctx context.Context, id TaskID) (*TaskStatus, error
 		return nil, nil
 	}
 
-	return s.status(t)
+	return t.status(), nil
 }
 
 func (s *service) KillTask(ctx context.Context, id TaskID) (*TaskStatus, error) {
@@ -81,18 +74,5 @@ func (s *service) KillTask(ctx context.Context, id TaskID) (*TaskStatus, error) 
 
 	t.kill()
 
-	return s.status(t)
-}
-
-func (s *service) status(t *task) (*TaskStatus, error) {
-	status, err := t.status()
-	if err != nil {
-		s.logger.Log(
-			"msg", "failed to get status",
-			"err", err,
-		)
-		return nil, errors.New("failed to get status")
-	}
-
-	return status, nil
+	return t.status(), nil
 }

@@ -9,11 +9,11 @@ import (
 // MaximalBodySize specifies maximal supported request body size.
 const MaximalBodySize = 1000000 // 1 MB
 
-func readBody(v interface{}, r *http.Request) error {
-	if r.Body == nil {
+func readJSON(v interface{}, r io.ReadCloser) error {
+	if r == nil {
 		return io.EOF
 	}
-	d := json.NewDecoder(io.LimitReader(r.Body, MaximalBodySize))
+	d := json.NewDecoder(io.LimitReader(r, MaximalBodySize))
 	return d.Decode(v)
 }
 
