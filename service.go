@@ -54,10 +54,10 @@ func (s *service) CreateTask(ctx context.Context, config *TaskConfig) (TaskID, e
 	}
 
 	s.tasksMu.Lock()
-	s.tasks[t.ID] = t
+	s.tasks[t.ID()] = t
 	s.tasksMu.Unlock()
 
-	return t.ID, nil
+	return t.ID(), nil
 }
 
 func (s *service) TaskStatus(ctx context.Context, id TaskID) (*TaskStatus, error) {
