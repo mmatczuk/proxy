@@ -108,7 +108,7 @@ func TestRunSequentialTaskKill(t *testing.T) {
 	defer ctrl.Finish()
 
 	m := NewMockRemoteClient(ctrl)
-	m.EXPECT().Update(gomock.Any(), "addr0", "info").Return(errors.New("killed")).Do(func(ctx context.Context, addr, info string) { <-ctx.Done() })
+	m.EXPECT().Update(gomock.Any(), "addr0", "info").Return(context.Canceled).Do(func(ctx context.Context, addr, info string) { <-ctx.Done() })
 
 	task, err := newTask(&TaskConfig{
 		Mode:        Sequential,
@@ -151,9 +151,9 @@ func TestRunParallelTaskFailOnError(t *testing.T) {
 	defer ctrl.Finish()
 
 	m := NewMockRemoteClient(ctrl)
-	m.EXPECT().Update(gomock.Any(), "addr0", "info").Return(errors.New("killed")).Do(func(ctx context.Context, addr, info string) { <-ctx.Done() })
+	m.EXPECT().Update(gomock.Any(), "addr0", "info").Return(context.Canceled).Do(func(ctx context.Context, addr, info string) { <-ctx.Done() })
 	m.EXPECT().Update(gomock.Any(), "addr1", "info").Return(errors.New("boom"))
-	m.EXPECT().Update(gomock.Any(), "addr2", "info").Return(errors.New("killed")).Do(func(ctx context.Context, addr, info string) { <-ctx.Done() })
+	m.EXPECT().Update(gomock.Any(), "addr2", "info").Return(context.Canceled).Do(func(ctx context.Context, addr, info string) { <-ctx.Done() })
 
 	task, err := newTask(&TaskConfig{
 		Mode:        Parallel,

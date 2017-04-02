@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -124,7 +125,7 @@ func (t *task) remoteCall(config *TaskConfig, addr string, r *result) error {
 
 	err := t.client.Update(t.context, addr, config.Info)
 	if err != nil {
-		if t.killed() {
+		if contextCanceledError(err) {
 			r.setStatus(Killed, nil)
 		} else {
 			r.setStatus(Failure, err)
@@ -153,6 +154,10 @@ func (t *task) remoteCall(config *TaskConfig, addr string, r *result) error {
 	)
 
 	return nil
+}
+
+func contextCanceledError(err error) bool {
+	return strings.Contains(err.Error(), context.Canceled.Error())
 }
 
 // ID returns taks identifier.
